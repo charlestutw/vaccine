@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d3b3f">
+<title>台灣疫苗接種・禁忌症與補種試算</title>
+<style>
+  :root{
+    --bg:#e9eef0; --surface:#fff; --ink:#12292d; --ink-2:#4a595c; --ink-3:#7c8a8d;
+    --teal:#0e7c86; --teal-deep:#0d3b3f; --line:#dbe3e4;
+    --fund-bg:#e2f1ea; --fund-tx:#136b4f; --self-bg:#fbeed6; --self-tx:#8f5b12; --mix-bg:#eaf0f6; --mix-tx:#3a5a86;
+    --alert-bg:#fdecea; --alert-tx:#b23a2c; --alert-bd:#f2c4bd;
+    --danger:#c2382b; --warn-bg:#fff5e0; --warn-bd:#f0d69a; --warn-tx:#8a5a10;
+    --ok-bg:#e2f1ea; --ok-tx:#136b4f;
+    --hl:#ffe9a8; --radius:16px; --tap:46px; font-size:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:calc(40px + env(safe-area-inset-bottom));}
+  .wrap{max-width:680px;margin:0 auto;}
+  header{background:var(--teal-deep);color:#eef6f5;padding:calc(18px + env(safe-area-inset-top)) 20px 16px;}
+  header .eyebrow{font-size:.72rem;letter-spacing:.22em;color:#7fc4bf;font-weight:700;}
+  header h1{margin:.25em 0 .12em;font-size:1.36rem;font-weight:800;letter-spacing:-.01em;line-height:1.25;}
+  header p.sub{margin:0;font-size:.8rem;color:#a9cecb;}
+
+  .alert{margin:14px 16px 0;background:var(--alert-bg);border:1px solid var(--alert-bd);border-radius:14px;padding:12px 14px;color:var(--alert-tx);}
+  .alert b{display:block;font-size:.88rem;margin-bottom:2px;}
+  .alert span{font-size:.8rem;color:#8a3226;line-height:1.5;}
+
+  /* tabs */
+  .tabs{position:sticky;top:0;z-index:30;background:var(--bg);display:flex;gap:6px;padding:12px 16px 10px;border-bottom:1px solid var(--line);}
+  .tab{flex:1;min-height:var(--tap);border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);
+    border-radius:12px;font-size:.82rem;font-weight:700;font-family:inherit;cursor:pointer;padding:0 4px;letter-spacing:-.02em;
+    transition:background .15s,color .15s,border-color .15s;}
+  .tab.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* search */
+  .controls{padding:12px 16px 4px;}
+  .search{position:relative;}
+  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;fill:var(--ink-3);}
+  .search input{width:100%;height:var(--tap);border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:0 40px 0 42px;font-size:1rem;color:var(--ink);font-family:inherit;outline:none;transition:border-color .15s;}
+  .search input:focus{border-color:var(--teal);}
+  .clr{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;background:transparent;
+    color:var(--ink-3);font-size:1.3rem;cursor:pointer;display:none;border-radius:8px;line-height:1;}
+  .clr.show{display:block;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px 2px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;min-height:38px;padding:0 15px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);
+    border-radius:100px;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;font-family:inherit;transition:.15s;}
+  .chip.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+
+  section{margin:20px 16px 0;scroll-margin-top:130px;}
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding-left:2px;}
+  .sec-num{font-size:.76rem;font-weight:800;color:var(--teal);letter-spacing:.06em;border:1.5px solid var(--teal);border-radius:7px;padding:2px 7px;flex:0 0 auto;}
+  .sec-head h2{margin:0;font-size:1.08rem;font-weight:800;letter-spacing:-.01em;}
+  .sec-head .rng{font-size:.76rem;color:var(--ink-3);margin-left:auto;font-weight:600;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin-bottom:10px;}
+  .card .top{display:flex;align-items:flex-start;gap:12px;}
+  .age{flex:0 0 auto;min-width:74px;font-weight:800;font-size:.92rem;color:var(--teal-deep);line-height:1.35;}
+  .body{flex:1 1 auto;min-width:0;}
+  .vax{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{font-size:.85rem;font-weight:700;padding:4px 10px;border-radius:8px;line-height:1.3;background:#eef4f4;color:var(--teal-deep);border:1px solid #dce9e8;}
+  .note{font-size:.81rem;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .badge{display:inline-block;font-size:.67rem;font-weight:800;padding:2px 8px;border-radius:100px;margin-top:9px;letter-spacing:.03em;}
+  .b-fund{background:var(--fund-bg);color:var(--fund-tx);} .b-self{background:var(--self-bg);color:var(--self-tx);} .b-mix{background:var(--mix-bg);color:var(--mix-tx);}
+  mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px;}
+
+  /* contraindication cards */
+  .cx{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin:0 16px 10px;}
+  .cx h3{margin:0 0 4px;font-size:1rem;font-weight:800;color:var(--teal-deep);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .cx .typ{font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.03em;}
+  .t-live{background:#f3e8f7;color:#7a3d92;} .t-inact{background:#e6eef5;color:#3a5a86;}
+  .cx .blk{margin-top:9px;}
+  .cx .lbl{font-size:.74rem;font-weight:800;letter-spacing:.02em;display:inline-block;margin-bottom:3px;}
+  .lbl.no{color:var(--danger);} .lbl.wait{color:var(--warn-tx);}
+  .cx ul{margin:2px 0 0;padding-left:1.15em;font-size:.83rem;color:var(--ink-2);line-height:1.55;}
+  .cx li{margin-bottom:4px;}
+
+  .banner{margin:12px 16px 0;border-radius:14px;padding:12px 14px;font-size:.8rem;line-height:1.55;}
+  .banner.warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-tx);}
+  .banner b{display:block;margin-bottom:2px;font-size:.85rem;}
+
+  /* calculator */
+  .calc-intro{margin:12px 16px 0;font-size:.83rem;color:var(--ink-2);line-height:1.6;}
+  .field{margin:0 16px 12px;}
+  .field label{display:block;font-size:.82rem;font-weight:700;color:var(--ink-2);margin-bottom:5px;}
+  .field input[type=date]{width:100%;height:var(--tap);border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+    padding:0 14px;font-size:1rem;color:var(--ink);font-family:inherit;outline:none;}
+  .field input[type=date]:focus{border-color:var(--teal);}
+  .agechip{display:inline-block;margin-top:8px;font-size:.8rem;font-weight:700;color:var(--teal-deep);background:#eef4f4;border:1px solid #dce9e8;border-radius:100px;padding:4px 12px;}
+
+  .vrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin:0 16px 10px;}
+  .vrow .vh{font-weight:800;font-size:.95rem;color:var(--teal-deep);display:flex;align-items:center;gap:8px;}
+  .vrow .vh .mini{font-size:.68rem;font-weight:800;padding:1px 7px;border-radius:100px;}
+  .vrow .inp{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .vrow .inp>div{flex:1 1 140px;min-width:130px;}
+  .vrow .inp span{display:block;font-size:.72rem;color:var(--ink-3);margin-bottom:4px;font-weight:600;}
+  .vrow select,.vrow input[type=date]{width:100%;height:42px;border:1.5px solid var(--line);border-radius:10px;background:#fff;
+    padding:0 10px;font-size:.95rem;color:var(--ink);font-family:inherit;outline:none;}
+  .vrow select:focus,.vrow input:focus{border-color:var(--teal);}
+  .result{margin-top:11px;border-radius:11px;padding:11px 12px;font-size:.85rem;line-height:1.5;display:none;}
+  .result.show{display:block;}
+  .result.next{background:#eaf3f4;border:1px solid #cfe4e4;}
+  .result.done{background:var(--ok-bg);border:1px solid #c4e3d3;color:var(--ok-tx);}
+  .result.wait{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-tx);}
+  .result .big{font-weight:800;font-size:1rem;color:var(--teal-deep);}
+  .result.done .big,.result.wait .big{color:inherit;}
+  .result .rule{font-size:.76rem;color:var(--ink-3);margin-top:4px;}
+
+  #empty{display:none;text-align:center;color:var(--ink-3);padding:40px 20px;font-size:.95rem;}
+  #empty.show{display:block;}
+  section.hide,.card.hide,.cx.hide{display:none;}
+
+  details{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:10px 16px 0;overflow:hidden;}
+  details>summary{list-style:none;cursor:pointer;padding:15px;font-weight:800;font-size:.96rem;display:flex;align-items:center;gap:10px;color:var(--teal-deep);}
+  details>summary::-webkit-details-marker{display:none;}
+  details>summary .ic{margin-left:auto;transition:transform .2s;color:var(--teal);font-size:1.1rem;}
+  details[open]>summary .ic{transform:rotate(90deg);}
+  .det-body{padding:0 15px 15px;font-size:.85rem;color:var(--ink-2);line-height:1.62;}
+  .det-body ul{margin:4px 0;padding-left:1.15em;} .det-body li{margin-bottom:7px;} .det-body li b{color:var(--ink);}
+
+  footer{margin:24px 16px 0;padding:16px;background:#dfe7e8;border-radius:var(--radius);font-size:.75rem;color:var(--ink-2);line-height:1.6;}
+  footer b{color:var(--ink);} footer .src{margin-top:8px;color:var(--ink-3);font-size:.71rem;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">TAIWAN CDC · 臨床輔助</div>
+    <h1>疫苗接種・禁忌症與補種試算</h1>
+    <p class="sub">依疾管署現行時程與 ACIP 建議整理・診間輔助工具</p>
+  </header>
+
+  <div class="alert" role="note">
+    <b>⚠ 政策異動：成人肺炎鏈球菌（115/1/15 起）</b>
+    <span>公費改為<strong>單劑 PCV20</strong>，取代舊有 PCV13＋PPV23 兩劑方案。</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-panel="p1">年齡分層</button>
+    <button class="tab" data-panel="p2">禁忌症／緩打</button>
+    <button class="tab" data-panel="p3">補種試算</button>
+    <button class="tab" data-panel="p4">未來3年</button>
+  </div>
+
+  <!-- ===================== PANEL 1: 年齡分層 ===================== -->
+  <div class="panel active" id="p1">
+    <div class="controls">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+        <input id="q1" type="search" inputmode="search" autocomplete="off" placeholder="搜尋疫苗或年齡（例：肺炎、日本腦炎）" aria-label="搜尋">
+        <button class="clr" id="c1" aria-label="清除">×</button>
+      </div>
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip active" data-target="all">全部</button>
+      <button class="chip" data-target="g1">0–入學前</button>
+      <button class="chip" data-target="g2">學齡・青少年</button>
+      <button class="chip" data-target="g3">成人 19–64</button>
+      <button class="chip" data-target="g4">長者 65＋</button>
+      <button class="chip" data-target="g5">育齡・孕婦</button>
+    </div>
+    <div id="content"></div>
+    <div id="empty">找不到符合的項目，換個關鍵字試試。</div>
+
+    <details>
+      <summary>常規時程・關鍵接種間隔提醒<span class="ic">›</span></summary>
+      <div class="det-body"><ul>
+        <li><b>B 型肝炎：</b>第 2、3 劑最短間隔 8 週；第 3 劑與第 1 劑至少間隔 16 週。</li>
+        <li><b>五合一第 4 劑：</b>若滿 4 歲後才接種，滿 5 歲之 DTaP-IPV／Tdap-IPV 可不再接種。</li>
+        <li><b>PCV13：</b>第 1、2 劑間隔至少 8 週；第 3 劑須滿 1 歲後接種。滿 7 個月後才起種者，第 1、2 劑間隔可縮短至 4 週。</li>
+        <li><b>MMR 與水痘：</b>可同時分開部位接種；若未同時，至少間隔 28 天。</li>
+        <li><b>日本腦炎（活性減毒）：</b>滿 15 個月第 1 劑，間隔 12 個月接種第 2 劑。</li>
+        <li><b>流感：</b>8 歲（含）以下初次接種應打 2 劑、間隔 4 週；9 歲以上初次接種僅需 1 劑。</li>
+      </ul></div>
+    </details>
+
+    <details>
+      <summary>成人肺炎鏈球菌 PCV20 銜接原則<span class="ic">›</span></summary>
+      <div class="det-body">
+        <p style="margin:0 0 8px"><b>公費對象（115/1/15 起）：</b>65 歲以上；55–64 歲原住民；19–64 歲 IPD 高風險對象。</p>
+        <ul>
+          <li><b>從未接種任何肺鏈疫苗：</b>接種 1 劑 PCV20。</li>
+          <li><b>曾接種 PPV23、間隔滿 1 年：</b>接種 1 劑 PCV20。</li>
+          <li><b>曾接種 PCV13/15、間隔滿 1 年</b>（高風險、或 65 歲以上機構住民及洗腎患者間隔滿 8 週）：先以 1 劑 PPV23 銜接，PPV23 用罄後改以 PCV20。</li>
+          <li><b>已完成 PCV13/15＋PPV23 或已接種 PCV20：</b>視為完整，無需再接種。</li>
+          <li><b>19–64 高風險</b>若 65 歲前已完成兩劑：可於滿 65 歲、與前劑間隔滿 5 年後追加 1 劑 PCV20。</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <!-- ===================== PANEL 2: 禁忌症 ===================== -->
+  <div class="panel" id="p2">
+    <div class="controls">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+        <input id="q2" type="search" inputmode="search" autocomplete="off" placeholder="搜尋疫苗（例：MMR、卡介苗、流感）" aria-label="搜尋禁忌症">
+        <button class="clr" id="c2" aria-label="清除">×</button>
+      </div>
+    </div>
+    <div class="banner warn">
+      <b>通則（適用所有疫苗）</b>
+      <span><b style="display:inline;color:var(--danger)">禁忌：</b>對疫苗成分曾發生嚴重過敏反應（anaphylaxis）、或前一劑後嚴重過敏者，不予接種。　<b style="display:inline;color:var(--warn-tx)">緩打：</b>發燒或急性中重度疾病者，待病情穩定後再接種；輕微上呼吸道感染、輕微腹瀉非禁忌。</span>
+    </div>
+    <div class="banner warn" style="margin-top:8px">
+      <b>活性減毒疫苗共同禁忌</b>
+      <span>孕婦、已知嚴重免疫功能不全者（先天免疫缺陷、治療中之白血病／淋巴瘤／惡性腫瘤、高劑量類固醇或免疫抑制治療、伴嚴重免疫抑制之 HIV、器官移植免疫抑制中）不予接種；近期曾輸血或使用血品／免疫球蛋白者需間隔一段時間；多種活性減毒疫苗若未同日接種，應間隔至少 28 天。含活性減毒者：<b style="display:inline">卡介苗、MMR、水痘、日本腦炎(活減)、口服輪狀、鼻噴流感</b>。</span>
+    </div>
+    <div id="cxlist" style="margin-top:14px"></div>
+    <div id="empty2" style="display:none;text-align:center;color:var(--ink-3);padding:40px 20px;font-size:.95rem;">找不到符合的疫苗。</div>
+  </div>
+
+  <!-- ===================== PANEL 3: 補種試算 ===================== -->
+  <div class="panel" id="p3">
+    <div class="banner warn" style="margin-top:14px">
+      <b>⚠ 工具極限（務必先讀）</b>
+      <span>本試算僅適用<b>單純、未長期中斷</b>的常規個案，用來估算「最早可接種日」。<b>不涵蓋</b>：免疫不全者特殊時程、國外不同廠牌疫苗銜接、劑數不明或紀錄不全者、高危險群加強時程。<b>PCV13 補種劑數依起種年齡而定</b>，本工具只算間隔、不判定總劑數。所有結果僅供輔助，實際接種<b>須經醫師依接種紀錄確認</b>。</span>
+    </div>
+    <div class="calc-intro">填入出生日期與各疫苗已完成劑數、最後一劑日期，即可估算下一劑最早可接種日與剩餘劑數。空白的疫苗不計算。</div>
+    <div class="field">
+      <label for="bd">出生日期</label>
+      <input type="date" id="bd">
+      <span class="agechip" id="agechip" style="display:none"></span>
+    </div>
+    <div id="calcrows"></div>
+    <div class="det-body" style="margin:14px 16px 0;font-size:.78rem;color:var(--ink-3)">
+      計算規則：週以 7 天計、月以曆月計。「最早可接種日」取「距前一劑最短間隔」與「最低接種年齡」兩者中較晚者。常規建議接種月齡另於各列標示。
+    </div>
+  </div>
+
+  <!-- ===================== PANEL 4: 未來3年排程 ===================== -->
+  <div class="panel" id="p4">
+    <div class="banner warn" style="margin-top:14px">
+      <b>⚠ 使用說明（務必先讀）</b>
+      <span>此表以<b>出生日期</b>推算「<b>常規時程</b>」中，未來 3 年內應接種的公費疫苗，用來提醒「大概什麼時候該打什麼」。<b>此表假設完全依常規時程、且尚未接種</b>；<b>不會</b>扣除已接種劑數、不判斷個別間隔是否足夠、不含自費或高風險加強時程。實際補種請用「補種試算」頁，並<b>由醫師依接種紀錄確認</b>。</span>
+    </div>
+    <div class="field" style="margin-top:14px">
+      <label for="bd2">出生日期</label>
+      <input type="date" id="bd2">
+      <span class="agechip" id="agechip2" style="display:none"></span>
+    </div>
+    <div class="field" style="margin-top:-4px">
+      <label for="asof">計算起算日（預設今天）</label>
+      <input type="date" id="asof">
+    </div>
+    <div id="schedwrap"></div>
+    <div id="empty4" style="display:none;text-align:center;color:var(--ink-3);padding:36px 20px;font-size:.92rem;">
+      填入出生日期即可列出未來 3 年的常規接種項目。
+    </div>
+    <div class="det-body" style="margin:14px 16px 0;font-size:.78rem;color:var(--ink-3)">
+      排程規則：以常規建議月齡／年齡推算應接種日（出生日期 ＋ 該疫苗建議月齡）。流感為每年接種，滿 6 個月起，於窗口內每年流感季（約 10 月）各列一次。僅顯示落在「起算日 ～ 起算日＋3 年」區間內的項目。
+    </div>
+  </div>
+
+  <footer>
+    <b>使用提醒：</b>本工具為公費常規時程、禁忌症與補種間隔之整理，實際接種須依個案接種史、補種規則與臨床評估調整；免疫不全、孕婦、特殊族群及國外接種銜接請個別評估。政策時有更新，臨床使用前請對照疾管署最新公告版本。
+    <div class="src">資料來源：衛生福利部疾病管制署「現行兒童預防接種時程表」「各疫苗接種禁忌與注意事項」「成人肺炎鏈球菌疫苗（115/1/15 PCV20）」及各疫苗仿單／ACIP 建議。整理日期：2026-07。</div>
+  </footer>
+</div>
+
+<script>
+/* ================= DATA: 年齡分層 ================= */
+const DATA = [
+  { id:"g1", title:"嬰幼兒及兒童", range:"0 歲 – 入國小前", rows:[
+    { age:"出生 24hr 內", vax:["B 型肝炎 第1劑"], fund:"fund", note:"母親 HBsAg 陽性者另加 B 肝免疫球蛋白（HBIG）。" },
+    { age:"滿 1 個月", vax:["B 型肝炎 第2劑"], fund:"fund" },
+    { age:"滿 2 個月", vax:["五合一 第1劑","PCV13 第1劑"], fund:"fund", note:"五合一＝DTaP-Hib-IPV。" },
+    { age:"滿 4 個月", vax:["五合一 第2劑","PCV13 第2劑"], fund:"fund" },
+    { age:"滿 5 個月", vax:["卡介苗 BCG"], fund:"fund", note:"建議滿 5–8 個月接種。" },
+    { age:"滿 6 個月", vax:["B 型肝炎 第3劑","五合一 第3劑"], fund:"fund", note:"滿 6 個月起每年接種流感。" },
+    { age:"滿 12 個月", vax:["MMR 第1劑","水痘 第1劑","PCV13 第3劑（追加）"], fund:"fund" },
+    { age:"滿 15 個月", vax:["日本腦炎(活減) 第1劑"], fund:"fund", note:"106/5/22 起改用細胞培養活性減毒疫苗。" },
+    { age:"滿 18 個月", vax:["五合一 第4劑","A 型肝炎 第1劑"], fund:"fund", note:"114 年起 A 肝調整為滿 18、27 個月。" },
+    { age:"滿 27 個月", vax:["日本腦炎(活減) 第2劑","A 型肝炎 第2劑"], fund:"fund", note:"日本腦炎兩劑間隔至少 12 個月。" },
+    { age:"滿 5 歲–入學前", vax:["MMR 第2劑","四合一 DTaP-IPV"], fund:"fund" },
+  ]},
+  { id:"g2", title:"學齡兒童及青少年", range:"小學 – 18 歲", rows:[
+    { age:"國小一年級", vax:["四合一 DTaP-IPV（未種者補）","MMR 補種查驗"], fund:"fund" },
+    { age:"國小學童", vax:["流感（每年）"], fund:"fund", note:"校園集中接種；8 歲以下初次接種 2 劑、間隔 4 週。" },
+    { age:"國中女生", vax:["HPV（2 劑）"], fund:"fund", note:"約小六至國一；男生自費建議。" },
+    { age:"國中生", vax:["Tdap-IPV"], fund:"fund" },
+    { age:"6 個月以上", vax:["流感（每年）","COVID-19（依政策）"], fund:"mix" },
+  ]},
+  { id:"g3", title:"成人", range:"19 – 64 歲", rows:[
+    { age:"每年", vax:["季節性流感"], fund:"mix", note:"公費含特定職業與高風險族群，其餘自費。" },
+    { age:"依政策", vax:["COVID-19"], fund:"mix" },
+    { age:"每 10 年", vax:["Td / Tdap"], fund:"self", note:"未曾接種 Tdap 者建議至少 1 劑。" },
+    { age:"高風險", vax:["肺炎鏈球菌 PCV20"], fund:"mix", note:"僅 19–64 歲 IPD 高風險為公費。" },
+    { age:"育齡未具抗體", vax:["MMR"], fund:"self", note:"接種後避孕 4 週。" },
+    { age:"有風險者", vax:["A 型肝炎","B 型肝炎"], fund:"self" },
+    { age:"建議", vax:["帶狀疱疹 RZV","HPV"], fund:"self" },
+  ]},
+  { id:"g4", title:"長者", range:"65 歲以上", rows:[
+    { age:"公費", vax:["肺炎鏈球菌 PCV20"], fund:"fund", note:"銜接原則見年齡分層頁展開區。" },
+    { age:"每年", vax:["季節性流感"], fund:"fund" },
+    { age:"依政策", vax:["COVID-19"], fund:"fund", note:"長者為優先對象。" },
+    { age:"建議", vax:["帶狀疱疹 RZV","RSV"], fund:"self" },
+    { age:"每 10 年", vax:["Td / Tdap"], fund:"self" },
+  ]},
+  { id:"g5", title:"育齡婦女及孕婦", range:"15 – 49 歲", rows:[
+    { age:"育齡未具抗體", vax:["MMR"], fund:"self", note:"接種後避孕 4 週；孕期禁打。" },
+    { age:"每次懷孕", vax:["Tdap"], fund:"mix", note:"孕期接種 1 劑，保護新生兒百日咳。" },
+    { age:"孕婦", vax:["流感"], fund:"fund", note:"任何孕期均可接種。" },
+    { age:"孕婦", vax:["RSV"], fund:"mix", note:"依政策提供，保護新生兒。" },
+  ]},
+];
+const FUND = { fund:["公費","b-fund"], self:["自費建議","b-self"], mix:["公費／自費","b-mix"] };
+
+/* ================= DATA: 禁忌症／緩打 ================= */
+const CONTRA = [
+  { name:"卡介苗 BCG", type:"live",
+    no:["先天或後天免疫功能不全者（含疑似 SCID 家族史）","HIV 感染者","接種部位有嚴重濕疹或皮膚病灶"],
+    wait:["早產兒／低體重兒：待體重與狀況穩定後再接種","發燒或急性中重度疾病"] },
+  { name:"B 型肝炎", type:"inact",
+    no:["對疫苗成分（含酵母菌 yeast）曾嚴重過敏"],
+    wait:["發燒或急性中重度疾病"] },
+  { name:"五合一 DTaP-Hib-IPV／四合一 DTaP-IPV", type:"inact",
+    no:["前一劑含百日咳疫苗後 7 天內發生不明原因腦病變（encephalopathy）"],
+    wait:["前劑後 48 小時內發燒 ≥40.5°C、持續哭鬧 ≥3 小時、或虛脫／低張力低反應（HHE）","前劑後 3 天內痙攣","未穩定之進行性神經疾病（含未控制癲癇、嬰兒痙攣）——宜延後含百日咳成分之疫苗","發燒或急性中重度疾病"] },
+  { name:"肺炎鏈球菌 PCV13／PCV20／PPV23", type:"inact",
+    no:["對疫苗成分或含類毒素成分曾嚴重過敏"],
+    wait:["發燒或急性中重度疾病","PCV 與 PPV23 不同時接種、需依規定間隔"] },
+  { name:"MMR 麻疹腮腺炎德國麻疹", type:"live",
+    no:["孕婦","嚴重免疫功能不全者","對 neomycin 或明膠（gelatin）曾嚴重過敏"],
+    wait:["近期輸血或使用血品／免疫球蛋白：需間隔數週至數月","接種後應避孕 4 週","血小板低下或紫斑病史者評估","發燒或急性中重度疾病"] },
+  { name:"水痘 Varicella", type:"live",
+    no:["孕婦","嚴重免疫功能不全者","對 neomycin 或明膠曾嚴重過敏"],
+    wait:["近期血品／免疫球蛋白需間隔","接種後 6 週內避免使用水楊酸（aspirin）","接種後應避孕 4 週","發燒或急性中重度疾病"] },
+  { name:"日本腦炎（活性減毒）", type:"live",
+    no:["孕婦","免疫功能不全者","對疫苗成分曾嚴重過敏"],
+    wait:["近期血品需間隔","發燒或急性中重度疾病"] },
+  { name:"A 型肝炎", type:"inact",
+    no:["對疫苗成分曾嚴重過敏"],
+    wait:["發燒或急性中重度疾病"] },
+  { name:"季節性流感（不活化，注射）", type:"inact",
+    no:["對疫苗成分曾嚴重過敏","未滿 6 個月嬰兒不予接種"],
+    wait:["雞蛋過敏多數仍可接種，嚴重過敏者評估後於適當場所接種","前次流感疫苗 6 週內發生 GBS 者請醫師評估","發燒或急性中重度疾病"] },
+  { name:"流感（鼻噴，活性減毒）", type:"live",
+    no:["對成分（含蛋白質）曾嚴重過敏","嚴重免疫缺陷者","使用 aspirin／水楊酸之 17 歲以下者、雷氏症候群"],
+    wait:["孕婦不予接種","發燒或急性中重度疾病"] },
+  { name:"Td／Tdap 破傷風白喉（百日咳）", type:"inact",
+    no:["對成分曾嚴重過敏","含百日咳者：前劑後腦病變（同 DTaP）"],
+    wait:["前次含破傷風疫苗後曾 Arthus 型反應者延長間隔","6 週內 GBS 病史評估","發燒或急性中重度疾病"] },
+  { name:"HPV 人類乳突病毒", type:"inact",
+    no:["對疫苗成分曾嚴重過敏（嘉喜含酵母菌）"],
+    wait:["孕婦不建議接種，建議產後再種（哺乳可）","發燒或急性中重度疾病"] },
+  { name:"帶狀疱疹 RZV（重組，不活化）", type:"inact",
+    no:["對疫苗成分曾嚴重過敏"],
+    wait:["急性帶狀疱疹發作期間暫緩","孕婦資料有限","發燒或急性中重度疾病"] },
+  { name:"COVID-19", type:"inact",
+    no:["對疫苗成分（如 PEG）曾嚴重過敏","前一劑後嚴重過敏"],
+    wait:["前次接種後曾發生心肌炎／心包膜炎者評估","發燒或急性中重度疾病"] },
+  { name:"RSV 呼吸道融合病毒", type:"inact",
+    no:["對疫苗成分曾嚴重過敏"],
+    wait:["孕婦用特定產品（Abrysvo）於建議孕週接種","發燒或急性中重度疾病"] },
+];
+
+/* ================= DATA: 補種試算規則 ================= */
+/* total: 公費總劑數; minAgeM: 最低接種年齡(月); build next-dose logic per vaccine */
+const VAX_CALC = [
+  { key:"bhep", name:"B 型肝炎", type:"inact", total:3, routine:"出生、1、6 個月",
+    next:(b,done,last)=>{ if(done>=3)return done_(); 
+      if(done===1)return calc(maxD(addD(last,28), addD(b,28)), "第2劑：距第1劑 ≥4 週");
+      if(done===2)return calc(maxD(addD(last,56), addM(b,6)), "第3劑：距第2劑 ≥8 週，且滿 6 個月");
+      return calc(b,"第1劑：出生時（24 小時內）"); } },
+  { key:"five", name:"五合一 DTaP-Hib-IPV", type:"inact", total:4, routine:"2、4、6、18 個月",
+    next:(b,done,last)=>{ if(done>=4)return done_();
+      if(done===1)return calc(maxD(addD(last,28),addM(b,3)),"第2劑：距第1劑 ≥4 週");
+      if(done===2)return calc(addD(last,28),"第3劑：距第2劑 ≥4 週");
+      if(done===3)return calc(maxD(addM(last,6),addM(b,12)),"第4劑：距第3劑 ≥6 個月，且滿 12 個月",
+        "若第4劑於滿 4 歲後接種，滿 5 歲四合一可免。");
+      return calc(addM(b,2),"第1劑：常規滿 2 個月（最低 6 週）"); } },
+  { key:"pcv", name:"PCV13 肺炎鏈球菌", type:"inact", total:null, routine:"2、4、12–15 個月（劑數依起種年齡）",
+    next:(b,done,last)=>{ if(done===0)return calc(addM(b,2),"第1劑：常規滿 2 個月");
+      // 間隔以 8 週計；追加劑須滿 12 個月
+      const base=addD(last,56); const ageAtBase=monthsBetween(b,base);
+      const d = ageAtBase>=12 ? maxD(base, addM(b,12)) : base;
+      return calc(d,"下一劑：距前一劑 ≥8 週（追加劑須滿 12 個月）",
+        "⚠ PCV13 總劑數依「起種年齡」而定：<7 月起種共 4 劑；7–11 月起種 3 劑；12–23 月起種 2 劑；24 月–未滿 5 歲健康兒 1 劑。請核對總劑數。"); } },
+  { key:"mmr", name:"MMR", type:"live", total:2, routine:"12 個月、滿 5 歲–入學前",
+    next:(b,done,last)=>{ if(done>=2)return done_();
+      if(done===1)return calc(addD(last,28),"第2劑：距第1劑 ≥28 天（常規滿 5 歲）");
+      return calc(addM(b,12),"第1劑：滿 12 個月"); } },
+  { key:"var", name:"水痘 Varicella", type:"live", total:1, routine:"12 個月（公費 1 劑）",
+    next:(b,done,last)=>{ if(done>=1)return done_("公費 1 劑已完成；第 2 劑為自費（<13 歲距第1劑 ≥3 個月）。");
+      return calc(addM(b,12),"第1劑：滿 12 個月"); } },
+  { key:"je", name:"日本腦炎（活性減毒）", type:"live", total:2, routine:"15 個月、27 個月",
+    next:(b,done,last)=>{ if(done>=2)return done_();
+      if(done===1)return calc(addM(last,12),"第2劑：距第1劑 ≥12 個月");
+      return calc(addM(b,15),"第1劑：滿 15 個月"); } },
+  { key:"ahep", name:"A 型肝炎", type:"inact", total:2, routine:"18 個月、27 個月",
+    next:(b,done,last)=>{ if(done>=2)return done_();
+      if(done===1)return calc(addM(last,6),"第2劑：距第1劑 ≥6 個月");
+      return calc(addM(b,12),"第1劑：最低滿 12 個月（常規滿 18 個月）"); } },
+];
+
+/* ================= DATA: 未來3年排程里程碑 =================
+   維護說明：
+   - m = 建議接種「月齡」（出生後幾個月）。年齡×12＝月齡，例：6歲=72、11歲=132、12歲=144。
+   - vax = 該時間點的疫苗項目（陣列）。
+   - fund = "fund"公費 / "self"自費 / "mix"公費或自費（對應上方 FUND 顏色）。
+   - note = 補充說明（可省略）。
+   新增或修改常規時程時，改這張表即可；請與上方「年齡分層 DATA」保持一致。 */
+const SCHEDULE = [
+  { m:0,   vax:["B 型肝炎 第1劑"], fund:"fund", note:"出生 24 小時內" },
+  { m:1,   vax:["B 型肝炎 第2劑"], fund:"fund" },
+  { m:2,   vax:["五合一 第1劑","PCV13 第1劑"], fund:"fund" },
+  { m:4,   vax:["五合一 第2劑","PCV13 第2劑"], fund:"fund" },
+  { m:5,   vax:["卡介苗 BCG"], fund:"fund", note:"建議滿 5–8 個月接種" },
+  { m:6,   vax:["B 型肝炎 第3劑","五合一 第3劑"], fund:"fund" },
+  { m:12,  vax:["MMR 第1劑","水痘 第1劑","PCV13 第3劑（追加）"], fund:"fund" },
+  { m:15,  vax:["日本腦炎(活減) 第1劑"], fund:"fund" },
+  { m:18,  vax:["五合一 第4劑","A 型肝炎 第1劑"], fund:"fund" },
+  { m:27,  vax:["日本腦炎(活減) 第2劑","A 型肝炎 第2劑"], fund:"fund", note:"日本腦炎兩劑間隔至少 12 個月" },
+  { m:60,  vax:["MMR 第2劑","四合一 DTaP-IPV"], fund:"fund", note:"滿 5 歲–入學前" },
+  { m:72,  vax:["四合一 DTaP-IPV（未種者補）","MMR 補種查驗"], fund:"fund", note:"國小一年級" },
+  { m:132, vax:["HPV（第1、2劑）"], fund:"fund", note:"國中女生公費（約小六至國一）；男生自費建議" },
+  { m:144, vax:["Tdap-IPV"], fund:"fund", note:"國中生" },
+];
+
+/* 每年接種項目：流感。滿 fromM 個月起，窗口內每年流感季各列一次。
+   month 用 0-11（9 代表 10 月）。 */
+const ANNUAL = [
+  { name:"季節性流感（每年）", fromM:6, month:9, fund:"fund", note:"滿 6 個月起每年接種；每年流感季（約 10 月）開打。8 歲以下初次接種需 2 劑、間隔 4 週。" },
+];
+
+/* ================= date helpers ================= */
+function parseD(s){ return s? new Date(s+"T00:00:00") : null; }
+function addD(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function addM(d,n){ const x=new Date(d); const day=x.getDate(); x.setMonth(x.getMonth()+n); if(x.getDate()<day)x.setDate(0); return x; }
+function maxD(){ return [...arguments].reduce((a,b)=> b>a?b:a); }
+function fmt(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function monthsBetween(a,b){ let m=(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth()); if(b.getDate()<a.getDate())m--; return m; }
+function ageText(b){ const t=new Date(); t.setHours(0,0,0,0); let m=monthsBetween(b,t); if(m<0)return "日期有誤"; const y=Math.floor(m/12); const mm=m%12; return (y>0?y+" 歲 ":"")+mm+" 個月"; }
+const TODAY=(()=>{const t=new Date();t.setHours(0,0,0,0);return t;})();
+function calc(date,rule,extra){ return {kind:"next",date,rule,extra}; }
+function done_(msg){ return {kind:"done",msg:msg||"已完成公費建議劑數。"}; }
+
+/* ================= render PANEL 1 ================= */
+const content=document.getElementById("content");
+DATA.forEach((g,gi)=>{
+  const sec=document.createElement("section"); sec.id=g.id; sec.dataset.group=g.id;
+  sec.innerHTML=`<div class="sec-head"><span class="sec-num">${gi+1}</span><h2>${g.title}</h2><span class="rng">${g.range}</span></div>`;
+  g.rows.forEach(r=>{
+    const [lab,cls]=FUND[r.fund]||FUND.mix;
+    const card=document.createElement("div"); card.className="card";
+    card.dataset.text=(r.age+" "+r.vax.join(" ")+" "+(r.note||"")).toLowerCase();
+    card.innerHTML=`<div class="top"><div class="age">${r.age}</div><div class="body">
+      <div class="vax">${r.vax.map(v=>`<span class="tag">${v}</span>`).join("")}</div>
+      ${r.note?`<div class="note">${r.note}</div>`:""}
+      <span class="badge ${cls}">${lab}</span></div></div>`;
+    sec.appendChild(card);
+  });
+  content.appendChild(sec);
+});
+
+/* ================= render PANEL 2 ================= */
+const cxlist=document.getElementById("cxlist");
+CONTRA.forEach(c=>{
+  const el=document.createElement("div"); el.className="cx";
+  el.dataset.text=(c.name+" "+c.no.join(" ")+" "+c.wait.join(" ")).toLowerCase();
+  const typ=c.type==="live"?`<span class="typ t-live">活性減毒</span>`:`<span class="typ t-inact">不活化</span>`;
+  el.innerHTML=`<h3>${c.name}${typ}</h3>
+    <div class="blk"><span class="lbl no">✕ 禁忌症（不予接種）</span>
+      <ul>${c.no.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <div class="blk"><span class="lbl wait">⏳ 緩打／注意事項</span>
+      <ul>${c.wait.map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+  cxlist.appendChild(el);
+});
+
+/* ================= render PANEL 3 ================= */
+const calcrows=document.getElementById("calcrows");
+const bd=document.getElementById("bd");
+const agechip=document.getElementById("agechip");
+VAX_CALC.forEach(v=>{
+  const row=document.createElement("div"); row.className="vrow"; row.dataset.key=v.key;
+  const typ=v.type==="live"?`<span class="mini t-live">活減</span>`:`<span class="mini t-inact">不活化</span>`;
+  const opts=[0,1,2,3,4].map(n=>`<option value="${n}">${n} 劑</option>`).join("");
+  row.innerHTML=`<div class="vh">${v.name}${typ}</div>
+    <div style="font-size:.74rem;color:var(--ink-3);margin-top:3px">常規：${v.routine}${v.total?"　公費共 "+v.total+" 劑":""}</div>
+    <div class="inp">
+      <div><span>已完成劑數</span><select class="done">${opts}</select></div>
+      <div><span>最後一劑日期</span><input type="date" class="last"></div>
+    </div>
+    <div class="result"></div>`;
+  calcrows.appendChild(row);
+});
+
+function runCalc(){
+  const b=parseD(bd.value);
+  if(b){ agechip.style.display="inline-block"; agechip.textContent="目前年齡：約 "+ageText(b); }
+  else agechip.style.display="none";
+  document.querySelectorAll(".vrow").forEach(row=>{
+    const v=VAX_CALC.find(x=>x.key===row.dataset.key);
+    const done=parseInt(row.querySelector(".done").value,10);
+    const last=parseD(row.querySelector(".last").value);
+    const res=row.querySelector(".result");
+    res.className="result";
+    if(!b){ res.classList.add("show","wait"); res.innerHTML=`<span class="big">請先填出生日期</span>`; return; }
+    if(done>0 && !last){ res.classList.add("show","wait"); res.innerHTML=`<span class="big">請填最後一劑日期</span><div class="rule">已完成 ${done} 劑，需最後一劑日期才能計算間隔。</div>`; return; }
+    if(v.total && done>v.total){ res.classList.add("show","wait"); res.innerHTML=`<span class="big">劑數超過公費總劑數（${v.total} 劑）</span><div class="rule">請確認接種紀錄。</div>`; return; }
+    const out=v.next(b,done,last);
+    res.classList.add("show");
+    if(out.kind==="done"){ res.classList.add("done"); res.innerHTML=`<span class="big">✓ ${out.msg}</span>`; return; }
+    const d=out.date;
+    const ready = d<=TODAY;
+    const remain = v.total ? (v.total-done) : null;
+    res.classList.add("next");
+    res.innerHTML=
+      `<span class="big">${ready?"✅ 已可接種（已達接種條件）":"建議最早可接種日：<span style=\"white-space:nowrap\">"+fmt(d)+"</span>"}</span>`+
+      (remain!==null?` <span style="font-size:.8rem;color:var(--ink-3)">・尚餘約 ${Math.max(remain,0)} 劑</span>`:"")+
+      `<div class="rule">${out.rule}</div>`+
+      (out.extra?`<div class="rule" style="color:var(--warn-tx);margin-top:4px">${out.extra}</div>`:"");
+  });
+}
+bd.addEventListener("change",runCalc);
+calcrows.addEventListener("change",runCalc);
+calcrows.addEventListener("input",runCalc);
+
+/* ================= tabs ================= */
+document.querySelector(".tabs").addEventListener("click",e=>{
+  const t=e.target.closest(".tab"); if(!t)return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); document.getElementById(t.dataset.panel).classList.add("active");
+  window.scrollTo({top:0,behavior:"auto"});
+});
+
+/* ================= chips (panel1) ================= */
+const chips=document.getElementById("chips");
+chips.addEventListener("click",e=>{ const bnt=e.target.closest(".chip"); if(!bnt)return;
+  chips.querySelectorAll(".chip").forEach(c=>c.classList.remove("active")); bnt.classList.add("active");
+  const t=bnt.dataset.target;
+  if(t!=="all"){ const el=document.getElementById(t); if(el)el.scrollIntoView({behavior:"smooth",block:"start"}); }
+  else window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* ================= filter helpers ================= */
+function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+function hl(node,term){ const raw=node.dataset.raw||(node.dataset.raw=node.textContent);
+  if(!term){node.textContent=raw;return;} const re=new RegExp("("+esc(term)+")","gi");
+  node.innerHTML= re.test(raw)? raw.replace(re,"<mark>$1</mark>") : raw; }
+
+/* panel1 filter */
+const q1=document.getElementById("q1"),c1=document.getElementById("c1"),empty=document.getElementById("empty");
+function filter1(){ const term=q1.value.trim().toLowerCase(); c1.classList.toggle("show",term.length>0); let any=false;
+  document.querySelectorAll("#content section").forEach(sec=>{ let vis=0;
+    sec.querySelectorAll(".card").forEach(card=>{ const m=!term||card.dataset.text.includes(term);
+      card.classList.toggle("hide",!m); if(m){vis++;any=true; card.querySelectorAll(".age,.tag,.note").forEach(n=>hl(n,term));}
+      else card.querySelectorAll(".age,.tag,.note").forEach(n=>hl(n,"")); });
+    sec.classList.toggle("hide",vis===0); });
+  empty.classList.toggle("show",!any); }
+q1.addEventListener("input",filter1);
+c1.addEventListener("click",()=>{q1.value="";filter1();q1.focus();});
+
+/* panel2 filter */
+const q2=document.getElementById("q2"),c2=document.getElementById("c2"),empty2=document.getElementById("empty2");
+function filter2(){ const term=q2.value.trim().toLowerCase(); c2.classList.toggle("show",term.length>0); let any=false;
+  document.querySelectorAll("#cxlist .cx").forEach(cx=>{ const m=!term||cx.dataset.text.includes(term);
+    cx.classList.toggle("hide",!m); if(m){any=true; cx.querySelectorAll("h3,li").forEach(n=>hl(n,term));}
+    else cx.querySelectorAll("h3,li").forEach(n=>hl(n,"")); });
+  empty2.style.display=any?"none":"block"; }
+q2.addEventListener("input",filter2);
+c2.addEventListener("click",()=>{q2.value="";filter2();q2.focus();});
+
+/* ================= PANEL 4: 未來3年排程 ================= */
+function ageAt(b,d){ let m=monthsBetween(b,d); if(m<0)return "—"; const y=Math.floor(m/12); const mm=m%12; return (y>0?y+" 歲 ":"")+mm+" 個月"; }
+
+function buildSchedule(b, asOf){
+  const start=asOf, end=addM(asOf,36), items=[];
+  SCHEDULE.forEach(s=>{
+    const due=addM(b,s.m);
+    if(due>=start && due<=end) items.push({date:due,vax:s.vax,fund:s.fund,note:s.note||""});
+  });
+  ANNUAL.forEach(a=>{
+    const eligible=addM(b,a.fromM);
+    for(let y=start.getFullYear(); y<=end.getFullYear(); y++){
+      const rep=new Date(y,a.month,1);
+      if(rep>=start && rep<=end && rep>=eligible)
+        items.push({date:rep,vax:[a.name],fund:a.fund,note:a.note,annual:true});
+    }
+  });
+  items.sort((x,y)=> x.date-y.date);
+  return items;
+}
+
+const bd2=document.getElementById("bd2");
+const asof=document.getElementById("asof");
+const schedwrap=document.getElementById("schedwrap");
+const empty4=document.getElementById("empty4");
+const agechip2=document.getElementById("agechip2");
+
+function runSchedule(){
+  const b=parseD(bd2.value);
+  const asOf=parseD(asof.value)||TODAY;
+  if(b){ agechip2.style.display="inline-block"; agechip2.textContent="目前年齡：約 "+ageText(b); }
+  else agechip2.style.display="none";
+  schedwrap.innerHTML="";
+  if(!b){ empty4.style.display="block"; empty4.textContent="填入出生日期即可列出未來 3 年的常規接種項目。"; return; }
+  const items=buildSchedule(b,asOf);
+  if(items.length===0){
+    empty4.style.display="block";
+    empty4.textContent="此區間內無常規公費接種項目（可能已過常規時程或尚未開始），請改用「補種試算」頁確認。";
+    return;
+  }
+  empty4.style.display="none";
+  const head=document.createElement("div");
+  head.className="calc-intro"; head.style.marginTop="4px";
+  head.innerHTML=`區間：<b>${fmt(asOf)}</b> ～ <b>${fmt(addM(asOf,36))}</b>　共 <b>${items.length}</b> 個時間點`;
+  schedwrap.appendChild(head);
+  items.forEach(it=>{
+    const [lab,cls]=FUND[it.fund]||FUND.fund;
+    const card=document.createElement("div"); card.className="card";
+    const tags=it.vax.map(v=>`<span class="tag">${v}</span>`).join("");
+    card.innerHTML=`<div class="top">
+      <div class="age" style="min-width:96px">${fmt(it.date)}<br><span style="font-weight:600;font-size:.75rem;color:var(--ink-3)">約 ${ageAt(b,it.date)}</span></div>
+      <div class="body">
+        <div class="vax">${tags}</div>
+        ${it.note?`<div class="note">${it.note}</div>`:""}
+        <span class="badge ${cls}">${it.annual?"公費・每年":lab}</span>
+      </div></div>`;
+    schedwrap.appendChild(card);
+  });
+}
+bd2.addEventListener("change",runSchedule);
+asof.addEventListener("change",runSchedule);
+</script>
+</body>
+</html>
